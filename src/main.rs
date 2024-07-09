@@ -17,7 +17,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     tracing_subscriber::fmt::init();
 
     //Read env variables
-    dotenvy::dotenv().expect("Unable to load .env file");
+    dotenvy::dotenv().ok();
     Config::init_from_env();
 
     // Create a axum app.
