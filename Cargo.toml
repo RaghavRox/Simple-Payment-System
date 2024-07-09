@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 axum = "0.7.5"
 chrono = "0.4.38"
+dotenvy = "0.15.7"
 jsonwebtoken = "9.3.0"
 rust-argon2 = "2.1.0"
 serde = { version = "1.0.203", features = ["derive"] }

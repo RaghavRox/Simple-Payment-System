@@ -3,8 +3,9 @@ use std::time::Duration;
 use axum::{
     error_handling::HandleErrorLayer,
     http::{Request, Response, StatusCode},
-    BoxError, Router,
+    BoxError,
 };
+use simple_payment_system::{config::Config, get_router};
 use tokio::{self, net::TcpListener, signal};
 use tower::{buffer::BufferLayer, limit::RateLimitLayer, ServiceBuilder};
 use tower_http::{catch_panic::CatchPanicLayer, timeout::TimeoutLayer, trace::TraceLayer};
@@ -12,10 +13,15 @@ use tracing::{info, info_span, Span};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    //Initiate logging
     tracing_subscriber::fmt::init();
 
-    // Create a regular axum app.
-    let app = Router::new().layer((
+    //Read env variables
+    dotenvy::dotenv().expect("Unable to load .env file");
+    Config::init_from_env();
+
+    // Create a axum app.
+    let app = get_router().layer((
         ServiceBuilder::new()
             .layer(HandleErrorLayer::new(|err: BoxError| async move {
                 (
@@ -44,7 +50,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         TimeoutLayer::new(Duration::from_secs(10)),
     ));
     // Create a `TcpListener` using tokio.
-    let listener = TcpListener::bind("0.0.0.0:3000").await?;
+    let listener = TcpListener::bind("0.0.0.0:80").await?;
     // Run the server with graceful shutdown
     axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_signal())
