@@ -1,16 +1,15 @@
-use std::env;
+use std::{env, sync::OnceLock};
 
 #[allow(non_snake_case)]
 pub struct Config {
     pub(crate) DATABASE_URL: String,
 }
+pub fn config() -> &'static Config {
+    static INSTANCE: OnceLock<Config> = OnceLock::new();
 
-impl Config {
-    pub fn init_from_env() -> Self {
-        Config {
-            DATABASE_URL: read_env_var("DATABASE_URL"),
-        }
-    }
+    INSTANCE.get_or_init(|| Config {
+        DATABASE_URL: read_env_var("DATABASE_URL"),
+    })
 }
 
 fn read_env_var(var: &str) -> String {

@@ -5,23 +5,22 @@ use axum::{
     http::{Request, Response, StatusCode},
     BoxError,
 };
-use simple_payment_system::{config::Config, get_router};
+use simple_payment_system::get_router;
 use tokio::{self, net::TcpListener, signal};
 use tower::{buffer::BufferLayer, limit::RateLimitLayer, ServiceBuilder};
 use tower_http::{catch_panic::CatchPanicLayer, timeout::TimeoutLayer, trace::TraceLayer};
 use tracing::{info, info_span, Span};
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+async fn main() -> anyhow::Result<()> {
     //Initiate logging
     tracing_subscriber::fmt::init();
 
     //Read env variables
     dotenvy::dotenv().ok();
-    Config::init_from_env();
 
     // Create a axum app.
-    let app = get_router().layer((
+    let app = get_router().await?.layer((
         ServiceBuilder::new()
             .layer(HandleErrorLayer::new(|err: BoxError| async move {
                 (
