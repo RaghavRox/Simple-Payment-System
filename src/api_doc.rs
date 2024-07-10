@@ -7,7 +7,8 @@ use utoipa::{
 #[openapi(
     paths(
         crate::signup,
-        crate::login
+        crate::login,
+        crate::whoami
     ),
     components(
         schemas(

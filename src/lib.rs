@@ -11,11 +11,22 @@ use argon2::{
     password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
     Argon2,
 };
-use axum::{extract::State, http, response::IntoResponse, routing::post, Json, Router};
+use axum::{
+    async_trait,
+    extract::{FromRequestParts, State},
+    http::{self, request::Parts, StatusCode},
+    response::{IntoResponse, Response},
+    routing::{get, post},
+    Json, RequestPartsExt, Router,
+};
+use axum_extra::{
+    headers::{authorization::Bearer, Authorization},
+    TypedHeader,
+};
 use chrono::{Duration, Utc};
 use config::config;
 use db::Db;
-use error::AppResult;
+use error::{AppError, AppResult};
 use jsonwebtoken::{
     errors::{Error, ErrorKind},
     EncodingKey, Header, TokenData,
@@ -31,7 +42,8 @@ pub async fn get_router() -> anyhow::Result<Router> {
 
     let user_management_router = Router::new()
         .route("/signup", post(signup))
-        .route("/login", post(login));
+        .route("/login", post(login))
+        .route("/whoami", get(whoami));
 
     Ok(Router::new()
         .nest("/users", user_management_router)
@@ -127,6 +139,22 @@ async fn login(
     Ok(generate_token(3600, user_credentials.username)?)
 }
 
+#[utoipa::path(
+    get,
+    path = "/users/whoami",
+    tag = "User Management",
+    responses(
+        (status = 200, description = "User is logged in"),
+        (status = 401, description = "Invalid bearer token"),
+    ),
+    security(
+        ("USER_JWT" = [])
+    )
+)]
+async fn whoami(UserInfo { username }: UserInfo) -> AppResult<impl IntoResponse> {
+    Ok(username.into_response())
+}
+
 fn hash_password(password: &str) -> anyhow::Result<String> {
     let salt = SaltString::generate(&mut OsRng);
 
@@ -189,4 +217,27 @@ async fn validate_token(token: &str) -> Result<String, Error> {
     };
 
     Ok(username)
+}
+
+pub(crate) struct UserInfo {
+    username: String,
+}
+
+#[async_trait]
+impl<S> FromRequestParts<S> for UserInfo {
+    type Rejection = Response;
+
+    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
+        // Extract the token from the authorization header
+        let TypedHeader(Authorization(bearer)) = parts
+            .extract::<TypedHeader<Authorization<Bearer>>>()
+            .await
+            .map_err(|_| StatusCode::BAD_REQUEST.into_response())?;
+
+        let username = validate_token(bearer.token())
+            .await
+            .map_err(|e| AppError::from(e).into_response())?;
+
+        Ok(UserInfo { username })
+    }
 }
