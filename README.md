@@ -7,7 +7,7 @@ A simple Payment System made in Rust using Axum + Sqlx + Postgres.
 - Transactions
 - Rate limiting
 - Auto generated Api docs
-- Data validatin
+- Data validation
 
 ### Building and running
 When you're ready, start application by running: \
