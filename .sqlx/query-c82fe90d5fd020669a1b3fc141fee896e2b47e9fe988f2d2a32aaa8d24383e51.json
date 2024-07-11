@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO transactions(from_user, to_user, amount) VALUES($1, $2, $3)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "c82fe90d5fd020669a1b3fc141fee896e2b47e9fe988f2d2a32aaa8d24383e51"
+}

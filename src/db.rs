@@ -91,7 +91,7 @@ impl Db {
         Ok(updated_balance)
     }
 
-    // Scope for optimization :  Instead of running 4 queries, a single sql function can be written and called from application.
+    // Scope for optimization :  Instead of running 5 queries, a single sql function can be written and called from application.
     /// If the transaction fails to insufficent balance this method returns false
     pub async fn process_transaction(
         &self,
