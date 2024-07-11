@@ -17,6 +17,8 @@ use utoipa::{
         schemas(
             crate::UserCredentials,
             crate::DepositAmount,
+            crate::TransactionRequest,
+            crate::Transaction,
         )
     ),
     modifiers(&SecurityAddon),

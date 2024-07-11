@@ -303,6 +303,7 @@ impl<S> FromRequestParts<S> for UserInfo {
     post,
     path = "/transactions",
     tag = "Transactions",
+    request_body = TransactionRequest,
     responses(
         (status = 200, description = "Transacion successfully executed"),
         (status = 402, description = "Insufficient balance"),
@@ -313,13 +314,40 @@ impl<S> FromRequestParts<S> for UserInfo {
         ("USER_JWT" = [])
     )
 )]
-async fn create_transaction() -> AppResult<impl IntoResponse> {
+async fn create_transaction(
+    State(db): State<Db>,
+    UserInfo { username }: UserInfo,
+    Json(transaciton_request): Json<TransactionRequest>,
+) -> AppResult<impl IntoResponse> {
+    transaciton_request.validate()?;
+
+    if !db
+        .process_transaction(&username, transaciton_request)
+        .await?
+    {
+        return Ok((
+            http::StatusCode::PAYMENT_REQUIRED,
+            "Insufficent balance in user account",
+        )
+            .into_response());
+    }
+
     Ok(().into_response())
 }
 
+#[derive(Serialize, ToSchema, Deserialize)]
 pub(crate) struct Transaction {
     transaction_id: Uuid,
     from_user: String,
     to_user: String,
+    amount: i32,
     created_at: chrono::DateTime<Utc>,
+}
+
+#[derive(Deserialize, ToSchema, Validate)]
+pub(crate) struct TransactionRequest {
+    #[validate(length(min = 4, max = 16))]
+    to_user: String,
+    #[validate(range(min = 1))]
+    amount: i32,
 }
