@@ -142,6 +142,8 @@ impl Db {
         .execute(&mut *transaction)
         .await?;
 
+        transaction.commit().await?;
+
         Ok(true)
     }
 
