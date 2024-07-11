@@ -124,7 +124,7 @@ impl Db {
         .await?
         .balance;
 
-        let updated_receiver_balance = receiver_balance - transaction_request.amount as i64;
+        let updated_receiver_balance = receiver_balance + transaction_request.amount as i64;
 
         sqlx::query!(
             "UPDATE user_credentials SET balance = $1 WHERE username = $2 ",
@@ -138,6 +138,15 @@ impl Db {
             "UPDATE user_credentials SET balance = $1 WHERE username = $2 ",
             updated_receiver_balance,
             transaction_request.to_user
+        )
+        .execute(&mut *transaction)
+        .await?;
+
+        sqlx::query!(
+            "INSERT INTO transactions(from_user, to_user, amount) VALUES($1, $2, $3)",
+            username,
+            transaction_request.to_user,
+            transaction_request.amount
         )
         .execute(&mut *transaction)
         .await?;
