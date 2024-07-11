@@ -1,7 +1,8 @@
 use axum::extract::FromRef;
 use sqlx::PgPool;
+use uuid::Uuid;
 
-use crate::{HashedUserCredentials, TransactionRequest};
+use crate::{HashedUserCredentials, Transaction, TransactionRequest};
 
 #[derive(FromRef, Clone)]
 pub(crate) struct Db {
@@ -142,5 +143,26 @@ impl Db {
         .await?;
 
         Ok(true)
+    }
+
+    pub async fn get_transaction(&self, id: Uuid) -> sqlx::Result<Transaction> {
+        sqlx::query_as!(
+            Transaction,
+            "SELECT * FROM transactions WHERE transaction_id = $1",
+            id
+        )
+        .fetch_one(&self.pool)
+        .await
+    }
+
+    pub async fn get_transactions_list(&self, username: &str) -> sqlx::Result<Vec<Transaction>> {
+        sqlx::query_as!(
+            Transaction,
+            "SELECT * FROM transactions WHERE from_user = $1 or to_user = $2",
+            username,
+            username
+        )
+        .fetch_all(&self.pool)
+        .await
     }
 }

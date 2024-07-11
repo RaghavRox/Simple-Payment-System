@@ -13,7 +13,7 @@ use argon2::{
 };
 use axum::{
     async_trait,
-    extract::{FromRequestParts, State},
+    extract::{FromRequestParts, Path, State},
     http::{self, request::Parts, StatusCode},
     response::{IntoResponse, Response},
     routing::{get, post},
@@ -50,7 +50,10 @@ pub async fn get_router() -> anyhow::Result<Router> {
         .route("/", get(get_balance))
         .route("/deposit", post(deposit));
 
-    let transactions_router = Router::new().route("/", post(create_transaction));
+    let transactions_router = Router::new()
+        .route("/", post(create_transaction))
+        .route("/:id", get(get_transaction_by_id))
+        .route("/", get(transactions_list));
 
     Ok(Router::new()
         .nest("/users", user_management_router)
@@ -333,6 +336,62 @@ async fn create_transaction(
     }
 
     Ok(().into_response())
+}
+
+#[utoipa::path(
+    get,
+    path = "/transactions/{id}",
+    tag = "Transactions",
+    params(
+        ("id" = Utoipa::Openapi::Schema::Uuid, Path, description = "Transaction id")
+    ),
+    responses(
+        (status = 200, description = "Transacion successfully retreived", body = Transaction),
+        (status = 403, description = "User is not authorized to view this transaction"),
+        (status = 401, description = "Incorrect Credentials"),
+        (status = 500, description = "Internal Server Error"),
+    ),
+    security(
+        ("USER_JWT" = [])
+    )
+)]
+async fn get_transaction_by_id(
+    State(db): State<Db>,
+    UserInfo { username }: UserInfo,
+    Path(id): Path<Uuid>,
+) -> AppResult<impl IntoResponse> {
+    let transaction = db.get_transaction(id).await?;
+
+    if (transaction.to_user != username) && (transaction.from_user != username) {
+        return Ok((
+            http::StatusCode::FORBIDDEN,
+            "User is not allowed to view this transaction",
+        )
+            .into_response());
+    }
+
+    Ok(Json(transaction).into_response())
+}
+
+///Transactions list belonging to a User
+#[utoipa::path(
+    get,
+    path = "/transactions",
+    tag = "Transactions",
+    responses(
+        (status = 200, description = "Transacions list  successfully retreived", body = Vec<Transaction>),
+        (status = 401, description = "Incorrect Credentials"),
+        (status = 500, description = "Internal Server Error"),
+    ),
+    security(
+        ("USER_JWT" = [])
+    )
+)]
+async fn transactions_list(
+    State(db): State<Db>,
+    UserInfo { username }: UserInfo,
+) -> AppResult<impl IntoResponse> {
+    Ok(Json(db.get_transactions_list(&username).await?).into_response())
 }
 
 #[derive(Serialize, ToSchema, Deserialize)]
