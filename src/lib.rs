@@ -35,6 +35,7 @@ use serde::{Deserialize, Serialize};
 
 use utoipa::{OpenApi, ToSchema};
 use utoipa_swagger_ui::SwaggerUi;
+use uuid::Uuid;
 use validator::Validate;
 pub async fn get_router() -> anyhow::Result<Router> {
     //Construct App State
@@ -45,8 +46,16 @@ pub async fn get_router() -> anyhow::Result<Router> {
         .route("/login", post(login))
         .route("/whoami", get(whoami));
 
+    let account_balance_router = Router::new()
+        .route("/", get(get_balance))
+        .route("/deposit", post(deposit));
+
+    let transactions_router = Router::new().route("/", post(create_transaction));
+
     Ok(Router::new()
         .nest("/users", user_management_router)
+        .nest("/transactions", transactions_router)
+        .nest("/balance", account_balance_router)
         .merge(
             SwaggerUi::new("/docs")
                 .url("/docs/openapi.json", ApiDoc::openapi())
@@ -99,9 +108,7 @@ async fn signup(
     State(db): State<Db>,
     Json(user_credentials): Json<UserCredentials>,
 ) -> AppResult<impl IntoResponse> {
-    if let Err(e) = user_credentials.validate() {
-        return Ok((http::StatusCode::UNPROCESSABLE_ENTITY, format!("{e}")).into_response());
-    }
+    user_credentials.validate()?;
 
     if db
         .check_if_username_exists(&user_credentials.username)
@@ -139,6 +146,38 @@ async fn login(
     Ok(generate_token(3600, user_credentials.username)?)
 }
 
+#[derive(Deserialize, Validate, ToSchema)]
+pub(crate) struct DepositAmount {
+    #[validate(range(min = 1))]
+    deposit_amount: i32,
+}
+
+#[utoipa::path(
+    post,
+    path = "/balance/deposit",
+    tag = "Account Balance Management",
+    request_body =  DepositAmount,
+    responses(
+        (status = 200, description = "Successfully deposited money", body = i64),
+        (status = 401, description = "Incorrect Credentials"),
+        (status = 500, description = "Internal Server Error"),
+    ),
+    security(
+        ("USER_JWT" = [])
+    )
+)]
+async fn deposit(
+    State(db): State<Db>,
+    UserInfo { username }: UserInfo,
+    Json(deposit_amount): Json<DepositAmount>,
+) -> AppResult<impl IntoResponse> {
+    deposit_amount.validate()?;
+    Ok(db
+        .deposit(&username, deposit_amount.deposit_amount)
+        .await?
+        .to_string())
+}
+
 #[utoipa::path(
     get,
     path = "/users/whoami",
@@ -153,6 +192,24 @@ async fn login(
 )]
 async fn whoami(UserInfo { username }: UserInfo) -> AppResult<impl IntoResponse> {
     Ok(username.into_response())
+}
+#[utoipa::path(
+    get,
+    path = "/balance",
+    tag = "Account Balance Management",
+    responses(
+        (status = 200, description = "Current balance of user"),
+        (status = 401, description = "Invalid bearer token"),
+    ),
+    security(
+        ("USER_JWT" = [])
+    )
+)]
+async fn get_balance(
+    State(db): State<Db>,
+    UserInfo { username }: UserInfo,
+) -> AppResult<impl IntoResponse> {
+    Ok((db.get_balance_of_user(&username).await?.to_string()).into_response())
 }
 
 fn hash_password(password: &str) -> anyhow::Result<String> {
@@ -240,4 +297,29 @@ impl<S> FromRequestParts<S> for UserInfo {
 
         Ok(UserInfo { username })
     }
+}
+
+#[utoipa::path(
+    post,
+    path = "/transactions",
+    tag = "Transactions",
+    responses(
+        (status = 200, description = "Transacion successfully executed"),
+        (status = 402, description = "Insufficient balance"),
+        (status = 401, description = "Incorrect Credentials"),
+        (status = 500, description = "Internal Server Error"),
+    ),
+    security(
+        ("USER_JWT" = [])
+    )
+)]
+async fn create_transaction() -> AppResult<impl IntoResponse> {
+    Ok(().into_response())
+}
+
+pub(crate) struct Transaction {
+    transaction_id: Uuid,
+    from_user: String,
+    to_user: String,
+    created_at: chrono::DateTime<Utc>,
 }

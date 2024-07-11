@@ -23,4 +23,5 @@ tracing = "0.1.40"
 tracing-subscriber = "0.3.18"
 utoipa = { version = "4.2.3", features = ["axum_extras", "chrono", "url", "uuid"] }
 utoipa-swagger-ui = { version = "7.1.0", features = ["axum", "reqwest"] }
+uuid = { version = "1.10.0", features = ["v4"] }
 validator = { version = "0.18.1", features = ["derive"] }

@@ -8,16 +8,22 @@ use utoipa::{
     paths(
         crate::signup,
         crate::login,
-        crate::whoami
+        crate::whoami,
+        crate::create_transaction,
+        crate::deposit,
+        crate::get_balance,
     ),
     components(
         schemas(
             crate::UserCredentials,
+            crate::DepositAmount,
         )
     ),
     modifiers(&SecurityAddon),
     tags(
       (name = "User Management", description = "User authentication and management"),  
+      (name = "Account Balance Management", description = "Account Balances Management"),  
+      (name = "Transactions" ),  
     ),
 )]
 pub(crate) struct ApiDoc;

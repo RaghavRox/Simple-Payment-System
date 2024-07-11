@@ -13,6 +13,8 @@ pub(crate) enum AppError {
     AnyhowError(#[from] anyhow::Error),
     #[error("{0}")]
     JwtError(#[from] jsonwebtoken::errors::Error),
+    #[error("{0}")]
+    DataValidatinError(#[from] validator::ValidationErrors),
 }
 
 impl IntoResponse for AppError {
@@ -29,6 +31,9 @@ impl IntoResponse for AppError {
             }
             AppError::JwtError(err) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()).into_response()
+            }
+            AppError::DataValidatinError(err) => {
+                (StatusCode::UNPROCESSABLE_ENTITY, err.to_string()).into_response()
             }
         }
     }
