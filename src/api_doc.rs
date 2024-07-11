@@ -3,24 +3,30 @@ use utoipa::{
     Modify, OpenApi,
 };
 
+use crate::{
+    balance::DepositAmount,
+    transaction::{Transaction, TransactionRequest},
+    user::UserCredentials,
+};
+
 #[derive(OpenApi)]
 #[openapi(
     paths(
-        crate::signup,
-        crate::login,
-        crate::whoami,
-        crate::create_transaction,
-        crate::deposit,
-        crate::get_balance,
-        crate::get_transaction_by_id,
-        crate::transactions_list,
+        crate::user::signup,
+        crate::user::login,
+        crate::user::whoami,
+        crate::transaction::create_transaction,
+        crate::transaction::get_transaction_by_id,
+        crate::transaction::transactions_list,
+        crate::balance::deposit,
+        crate::balance::get_balance,
     ),
     components(
         schemas(
-            crate::UserCredentials,
-            crate::DepositAmount,
-            crate::TransactionRequest,
-            crate::Transaction,
+            UserCredentials,
+            DepositAmount,
+            TransactionRequest,
+            Transaction,
         )
     ),
     modifiers(&SecurityAddon),
