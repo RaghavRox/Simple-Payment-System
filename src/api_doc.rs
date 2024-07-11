@@ -12,6 +12,8 @@ use utoipa::{
         crate::create_transaction,
         crate::deposit,
         crate::get_balance,
+        crate::get_transaction_by_id,
+        crate::transactions_list,
     ),
     components(
         schemas(

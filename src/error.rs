@@ -29,9 +29,7 @@ impl IntoResponse for AppError {
             AppError::AnyhowError(err) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()).into_response()
             }
-            AppError::JwtError(err) => {
-                (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()).into_response()
-            }
+            AppError::JwtError(err) => (StatusCode::UNAUTHORIZED, err.to_string()).into_response(),
             AppError::DataValidatinError(err) => {
                 (StatusCode::UNPROCESSABLE_ENTITY, err.to_string()).into_response()
             }
