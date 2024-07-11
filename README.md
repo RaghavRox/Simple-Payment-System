@@ -1,5 +1,5 @@
 # Simple Payment System
-A simple Payment System in Rust.
+A simple Payment System made in Rust using Axum + Sqlx + Postgres.
 
 ## Features Implemented
 - JWT tokens
