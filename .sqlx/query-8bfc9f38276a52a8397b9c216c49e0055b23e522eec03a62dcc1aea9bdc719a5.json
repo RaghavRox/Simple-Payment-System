@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT balance FROM user_credentials WHERE username IN ($1, $2) FOR UPDATE;",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "balance",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "8bfc9f38276a52a8397b9c216c49e0055b23e522eec03a62dcc1aea9bdc719a5"
+}

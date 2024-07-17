@@ -14,6 +14,15 @@ impl Db {
     ) -> sqlx::Result<bool> {
         let mut transaction = self.pool.begin().await?;
 
+        //lock the rows
+        sqlx::query!(
+            "SELECT balance FROM user_credentials WHERE username IN ($1, $2) FOR UPDATE;",
+            username,
+            transaction_request.to_user
+        )
+        .fetch_all(&mut *transaction)
+        .await?;
+
         let balance = sqlx::query!(
             "SELECT balance FROM user_credentials WHERE username = $1",
             username
@@ -22,35 +31,23 @@ impl Db {
         .await?
         .balance;
 
-        let new_balance = balance - transaction_request.amount as i64;
-
         // check if balance is sufficient
-        if new_balance < 0 {
+        if balance < transaction_request.amount as i64 {
             transaction.rollback().await?;
             return Ok(false);
         }
 
-        let receiver_balance = sqlx::query!(
-            "SELECT balance FROM user_credentials WHERE username = $1",
-            transaction_request.to_user
-        )
-        .fetch_one(&mut *transaction)
-        .await?
-        .balance;
-
-        let updated_receiver_balance = receiver_balance + transaction_request.amount as i64;
-
         sqlx::query!(
-            "UPDATE user_credentials SET balance = $1 WHERE username = $2 ",
-            new_balance,
+            "UPDATE user_credentials SET balance = balance - $1 WHERE username = $2 ",
+            transaction_request.amount as i64,
             username
         )
         .execute(&mut *transaction)
         .await?;
 
         sqlx::query!(
-            "UPDATE user_credentials SET balance = $1 WHERE username = $2 ",
-            updated_receiver_balance,
+            "UPDATE user_credentials SET balance = balance + $1 WHERE username = $2 ",
+            transaction_request.amount as i64,
             transaction_request.to_user
         )
         .execute(&mut *transaction)

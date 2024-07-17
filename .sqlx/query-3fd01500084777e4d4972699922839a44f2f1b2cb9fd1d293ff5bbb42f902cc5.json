@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE user_credentials SET balance = balance + $1 WHERE username = $2 ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "3fd01500084777e4d4972699922839a44f2f1b2cb9fd1d293ff5bbb42f902cc5"
+}

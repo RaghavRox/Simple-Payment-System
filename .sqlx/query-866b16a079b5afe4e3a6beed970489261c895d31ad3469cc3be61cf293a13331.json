@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "UPDATE user_credentials SET balance = $1 WHERE username = $2 ",
+  "query": "UPDATE user_credentials SET balance = balance - $1 WHERE username = $2 ",
   "describe": {
     "columns": [],
     "parameters": {
@@ -11,5 +11,5 @@
     },
     "nullable": []
   },
-  "hash": "c8678ebedb04084f7f530cb0f3fdfb4656503fb24a84df65d1354a7175c0a2fb"
+  "hash": "866b16a079b5afe4e3a6beed970489261c895d31ad3469cc3be61cf293a13331"
 }
